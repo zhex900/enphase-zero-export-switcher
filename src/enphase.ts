@@ -30,7 +30,7 @@ async function loginAndGetToken(options: {
   let cookieHeader = await jar.getCookieString("https://enlighten.enphaseenergy.com/");
   if (!cookieHeader.includes("enlighten_manager_token_production=")) {
     // Fallback: if the cookie jar didn't capture the cookie, try to read Set-Cookie from response and set it manually
-    const setCookie = (loginRes.headers as any)["set-cookie"] as string[] | string | undefined;
+    const setCookie = loginRes.headers["set-cookie"] as string[] | string | undefined;
     if (setCookie) {
       const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
       for (const c of cookieArray) {

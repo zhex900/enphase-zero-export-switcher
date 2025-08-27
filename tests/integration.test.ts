@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 
-import { main } from "../src/index";
 import { NORMAL_EXPORT, ZERO_EXPORT } from "../src/enphase";
+import { main } from "../src/index";
 import {
   mockAmberCurrentPrices,
   mockEnphaseEndpoints,
