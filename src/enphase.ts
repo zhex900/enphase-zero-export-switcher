@@ -24,10 +24,25 @@ async function loginAndGetToken(options: {
     `?user%5Bemail%5D=${encodeURIComponent(email)}` +
     `&user%5Bpassword%5D=${encodeURIComponent(password)}`;
 
-  await client.post(loginUrl, undefined, { jar });
+  const loginRes = await client.post(loginUrl, undefined, { jar });
 
   // Compose Cookie header for the domain and find the token cookie
-  const cookieHeader = await jar.getCookieString("https://enlighten.enphaseenergy.com/");
+  let cookieHeader = await jar.getCookieString("https://enlighten.enphaseenergy.com/");
+  if (!cookieHeader.includes("enlighten_manager_token_production=")) {
+    // Fallback: if the cookie jar didn't capture the cookie, try to read Set-Cookie from response and set it manually
+    const setCookie = (loginRes.headers as any)["set-cookie"] as string[] | string | undefined;
+    if (setCookie) {
+      const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
+      for (const c of cookieArray) {
+        try {
+          await jar.setCookie(c, "https://enlighten.enphaseenergy.com/");
+        } catch {
+          // ignore bad cookie formats in fallback
+        }
+      }
+      cookieHeader = await jar.getCookieString("https://enlighten.enphaseenergy.com/");
+    }
+  }
   const cookies = cookieHeader.split(/;\s*/);
 
   const tokenCookie = cookies.find((c) => c.startsWith("enlighten_manager_token_production="));
