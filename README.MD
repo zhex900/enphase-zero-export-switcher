@@ -7,7 +7,14 @@ Inspired by the excellent work of [Amber Enphase Zero Export Switcher Tool](http
 This implementation is written in TypeScript and deployed to AWS as a single-file Lambda, scheduled to run via EventBridge Scheduler. It automatically toggles your battery-less [Enphase](https://enphase.com/) grid profile to prevent exporting when [Amber Electric](https://www.amber.com.au/) feed-in prices are negative.
 
 Avoid getting charged for exporting during negative price events.
-![Negative prices](doc/images/amber-negative-prices-worst-day.png)
+
+## Motivation
+
+After multiple attempts, I couldn’t get the [Amber Enphase Zero Export Switcher Tool](https://github.com/ZimbiX/amber-enphase-zero-export-switcher-tool?tab=readme-ov-file) to work. Both Enphase support and my solar installer confirmed that adding another grid profile is not possible.
+
+Having requested DIY installer access via the [Enphase Service Manager](https://enlighten.enphaseenergy.com/), I discovered that the Grid Profile can be changed through the Service Manager interface. The main challenge was implementing programmatic authentication. Once authenticated, it was straightforward to inspect the API requests and replicate them programmatically.
+
+<img src="doc/images/service-manager.png" width="500" />
 
 ## How it works
 
