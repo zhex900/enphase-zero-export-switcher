@@ -1,0 +1,12 @@
+{
+  "name": "enphase-zero-export-switcher-infra",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@pulumi/aws": "^7.6.0",
+    "@pulumi/pulumi": "^3.191.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

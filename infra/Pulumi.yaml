@@ -1,0 +1,3 @@
+name: enphase-zero-export-switcher
+runtime: nodejs
+description: Scheduled Lambda to run index.main every 10 minutes during daytime window
