@@ -21,7 +21,7 @@ Having requested DIY installer access via the [Enphase Service Manager](https://
 - Fetch current import/export prices from Amber.
 - Decide whether exporting “costs” you (negative FiT).
 - Set Enphase grid profile to zero-export when it’s costly; otherwise restore normal export.
-- Runs every 10 minutes between 10:00–16:59 Australia/Sydney time.
+- Runs every 10 minutes between 9:00–17:00 Australia/Sydney time.
 
 ## Architecture
 

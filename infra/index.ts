@@ -69,7 +69,7 @@ new aws.iam.RolePolicy("schedulerInvokeLambda", {
 });
 
 const schedule = new aws.scheduler.Schedule("tenMinDaytimeSydney", {
-  scheduleExpression: "cron(0/10 10-16 ? * * *)",
+  scheduleExpression: "cron(0/10 9-17 ? * * *)",
   scheduleExpressionTimezone: "Australia/Sydney",
   flexibleTimeWindow: { mode: "OFF" },
   target: {
