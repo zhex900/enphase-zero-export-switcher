@@ -4,6 +4,14 @@ import * as path from "path";
 
 const cfg = new pulumi.Config();
 
+// DynamoDB table to track current Enphase grid profile state
+const table = new aws.dynamodb.Table("enphase-solar", {
+  name: "enphase-solar",
+  billingMode: "PAY_PER_REQUEST",
+  attributes: [{ name: "systemId", type: "S" }],
+  hashKey: "systemId",
+});
+
 // Build an AWS Lambda using Node.js with esbuild and point to src/lambda.handler
 const role = new aws.iam.Role("lambdaRole", {
   assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({
@@ -27,6 +35,7 @@ const lambda = new aws.lambda.Function("enphaseSwitcher", {
     variables: {
       AMBER_TOKEN: cfg.requireSecret("AMBER_TOKEN"),
       AMBER_SITE_ID: cfg.require("AMBER_SITE_ID"),
+      ENPHASE_TABLE_NAME: table.name,
       ENPHASE_EMAIL: cfg.requireSecret("ENPHASE_EMAIL"),
       ENPHASE_PASSWORD: cfg.requireSecret("ENPHASE_PASSWORD"),
       ENPHASE_SYSTEM_ID: cfg.require("ENPHASE_SYSTEM_ID"),
@@ -43,6 +52,28 @@ const lambda = new aws.lambda.Function("enphaseSwitcher", {
   code: new pulumi.asset.AssetArchive({
     "index.js": new pulumi.asset.FileAsset(path.join(process.cwd(), "..", "dist", "index.js")),
   }),
+});
+
+// Allow Lambda to access the DynamoDB table
+new aws.iam.RolePolicy("lambdaDynamoAccess", {
+  role: role.id,
+  policy: pulumi
+    .output({
+      Version: "2012-10-17",
+      Statement: [
+        {
+          Action: [
+            "dynamodb:GetItem",
+            "dynamodb:PutItem",
+            "dynamodb:UpdateItem",
+            "dynamodb:DescribeTable",
+          ],
+          Effect: "Allow",
+          Resource: table.arn,
+        },
+      ],
+    })
+    .apply((p) => JSON.stringify(p)),
 });
 
 // Schedule using EventBridge Scheduler in Australia/Sydney timezone

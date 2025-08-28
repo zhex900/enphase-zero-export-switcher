@@ -1,6 +1,78 @@
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
-import { beforeAll, afterEach, afterAll } from "vitest";
+import { beforeAll, afterEach, afterAll, vi } from "vitest";
+
+// --- DynamoDB (AWS SDK v3) mock utilities ---
+type AnyObject = Record<string, any>;
+const ddbTables = new Map<string, Map<string, AnyObject>>();
+
+function getTable(name: string): Map<string, AnyObject> {
+  let table = ddbTables.get(name);
+  if (!table) {
+    table = new Map<string, AnyObject>();
+    ddbTables.set(name, table);
+  }
+  return table;
+}
+
+export function resetDynamoMock() {
+  ddbTables.clear();
+}
+
+export function seedDynamoItem(opts: { tableName: string; item: AnyObject }) {
+  const table = getTable(opts.tableName);
+  table.set(String(opts.item.systemId), opts.item);
+}
+
+export function getDynamoItem(opts: { tableName: string; systemId: string }) {
+  const table = getTable(opts.tableName);
+  return table.get(String(opts.systemId));
+}
+
+vi.mock("@aws-sdk/client-dynamodb", () => {
+  class DynamoDBClient {
+    // no-op client
+    constructor() {}
+  }
+  return { DynamoDBClient };
+});
+
+vi.mock("@aws-sdk/lib-dynamodb", () => {
+  class GetCommand {
+    input: any;
+    constructor(input: any) {
+      this.input = input;
+    }
+  }
+  class PutCommand {
+    input: any;
+    constructor(input: any) {
+      this.input = input;
+    }
+  }
+  class DynamoDBDocumentClient {
+    static from() {
+      return new DynamoDBDocumentClient();
+    }
+    async send(command: any) {
+      if (command instanceof GetCommand) {
+        const table = getTable(command.input.TableName);
+        const key = String(command.input.Key.systemId);
+        const Item = table.get(key);
+        return { Item };
+      }
+      if (command instanceof PutCommand) {
+        const table = getTable(command.input.TableName);
+        const item = command.input.Item as AnyObject;
+        const key = String(item.systemId);
+        table.set(key, item);
+        return {};
+      }
+      throw new Error("Unsupported command type in DynamoDB mock");
+    }
+  }
+  return { DynamoDBDocumentClient, GetCommand, PutCommand };
+});
 
 export const server = setupServer();
 

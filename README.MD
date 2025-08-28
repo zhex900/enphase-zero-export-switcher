@@ -21,6 +21,7 @@ Having requested DIY installer access via the [Enphase Service Manager](https://
 - Fetch current import/export prices from Amber.
 - Decide whether exporting “costs” you (negative FiT).
 - Set Enphase grid profile to zero-export when it’s costly; otherwise restore normal export.
+- The Enphase grid profile is cached in DynamoDB to minimize unnecessary API calls. 
 - Runs every 10 minutes between 9:00–17:00 Australia/Sydney time.
 
 ## Architecture
