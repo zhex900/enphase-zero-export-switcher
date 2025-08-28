@@ -23,6 +23,7 @@ Having requested DIY installer access via the [Enphase Service Manager](https://
 - Set Enphase grid profile to zero-export when it’s costly; otherwise restore normal export.
 - The Enphase grid profile is cached in DynamoDB to minimize unnecessary API calls. 
 - Runs every 10 minutes between 9:00–17:00 Australia/Sydney time.
+- [Adjust the battery reserve level to 100% at the same time you switch to the 0 export grid profile](https://github.com/ZimbiX/amber-enphase-zero-export-switcher-tool/issues/1). Immediately change it back to the normal reserve level.
 
 ## Architecture
 

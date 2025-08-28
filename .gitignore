@@ -2,3 +2,5 @@ node_modules/
 dist/
 .env
 infra/Pulumi.*.yaml
+a.js
+a.sh
