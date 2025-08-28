@@ -1,15 +1,19 @@
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
-import { beforeAll, afterEach, afterAll, vi } from "vitest";
+import { beforeAll, afterEach, afterAll } from "vitest";
 
 // --- DynamoDB (AWS SDK v3) mock utilities ---
-type AnyObject = Record<string, any>;
-const ddbTables = new Map<string, Map<string, AnyObject>>();
+type Primitive = string | number | boolean;
+type PlainItem = Record<string, Primitive>;
+type AttributeValue = { S: string } | { N: string } | { BOOL: boolean };
+type DynamoItem = Record<string, AttributeValue>;
 
-function getTable(name: string): Map<string, AnyObject> {
+const ddbTables = new Map<string, Map<string, PlainItem>>();
+
+function getTable(name: string): Map<string, PlainItem> {
   let table = ddbTables.get(name);
   if (!table) {
-    table = new Map<string, AnyObject>();
+    table = new Map<string, PlainItem>();
     ddbTables.set(name, table);
   }
   return table;
@@ -19,62 +23,82 @@ export function resetDynamoMock() {
   ddbTables.clear();
 }
 
-export function seedDynamoItem(opts: { tableName: string; item: AnyObject }) {
+export function seedDynamoItem(opts: { tableName: string; item: PlainItem }) {
   const table = getTable(opts.tableName);
   table.set(String(opts.item.systemId), opts.item);
 }
 
-export function getDynamoItem(opts: { tableName: string; systemId: string }) {
+export function getDynamoItem(opts: {
+  tableName: string;
+  systemId: string;
+}): PlainItem | undefined {
   const table = getTable(opts.tableName);
   return table.get(String(opts.systemId));
 }
 
-vi.mock("@aws-sdk/client-dynamodb", () => {
-  class DynamoDBClient {
-    // no-op client
-    constructor() {}
-  }
-  return { DynamoDBClient };
-});
+// --- MSW handlers for DynamoDB (AWS SDK v3) ---
+function unmarshallAttr(attr: AttributeValue | undefined): Primitive | undefined {
+  if (!attr || typeof attr !== "object") return undefined;
+  if ("S" in attr) return (attr as { S: string }).S;
+  if ("N" in attr) return Number((attr as { N: string }).N);
+  if ("BOOL" in attr) return Boolean((attr as { BOOL: boolean }).BOOL);
+  return undefined;
+}
 
-vi.mock("@aws-sdk/lib-dynamodb", () => {
-  class GetCommand {
-    input: any;
-    constructor(input: any) {
-      this.input = input;
-    }
+function unmarshallItem(item: DynamoItem | undefined): PlainItem {
+  const out: PlainItem = {};
+  for (const [k, v] of Object.entries(item ?? {})) {
+    const value = unmarshallAttr(v as AttributeValue);
+    if (value !== undefined) out[k] = value;
   }
-  class PutCommand {
-    input: any;
-    constructor(input: any) {
-      this.input = input;
-    }
-  }
-  class DynamoDBDocumentClient {
-    static from() {
-      return new DynamoDBDocumentClient();
-    }
-    async send(command: any) {
-      if (command instanceof GetCommand) {
-        const table = getTable(command.input.TableName);
-        const key = String(command.input.Key.systemId);
-        const Item = table.get(key);
-        return { Item };
-      }
-      if (command instanceof PutCommand) {
-        const table = getTable(command.input.TableName);
-        const item = command.input.Item as AnyObject;
-        const key = String(item.systemId);
-        table.set(key, item);
-        return {};
-      }
-      throw new Error("Unsupported command type in DynamoDB mock");
-    }
-  }
-  return { DynamoDBDocumentClient, GetCommand, PutCommand };
-});
+  return out;
+}
 
-export const server = setupServer();
+function marshallValue(value: Primitive): AttributeValue {
+  if (typeof value === "string") return { S: value };
+  if (typeof value === "number") return { N: String(value) };
+  if (typeof value === "boolean") return { BOOL: value };
+  // Fallback shouldn't happen because Primitive covers all branches
+  return { S: String(value) };
+}
+
+function marshallItem(item: PlainItem): DynamoItem {
+  const out: DynamoItem = {};
+  for (const [k, v] of Object.entries(item ?? {})) {
+    out[k] = marshallValue(v as Primitive);
+  }
+  return out;
+}
+
+const dynamoHandler = http.post(
+  /https?:\/\/dynamodb\.[-a-z0-9]+\.amazonaws\.com\/?/,
+  async ({ request }) => {
+    const target = request.headers.get("x-amz-target") || "";
+    const body = (await request.json()) as {
+      TableName?: string;
+      Key?: DynamoItem;
+      Item?: DynamoItem;
+    };
+
+    if (target.endsWith("GetItem")) {
+      const table = getTable(String(body.TableName ?? ""));
+      const key = unmarshallItem(body.Key);
+      const item = table.get(String(key.systemId));
+      return HttpResponse.json({ Item: item ? marshallItem(item) : undefined });
+    }
+
+    if (target.endsWith("PutItem")) {
+      const table = getTable(String(body.TableName ?? ""));
+      const item = unmarshallItem(body.Item);
+      table.set(String(item.systemId), item);
+      return HttpResponse.json({});
+    }
+
+    return HttpResponse.json({ message: "Unhandled DynamoDB operation" }, { status: 400 });
+  },
+);
+
+export const server = setupServer(dynamoHandler);
 
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => server.resetHandlers());
@@ -125,9 +149,8 @@ export function mockEnphaseEndpoints(opts: EnphaseMockOptions) {
         status: 200,
         headers: {
           // Use proper Set-Cookie header so axios-cookiejar-support stores it in the jar
-          "Set-Cookie": [
+          "Set-Cookie":
             "enlighten_manager_token_production=dummy; Path=/; Domain=enlighten.enphaseenergy.com; HttpOnly",
-          ],
         },
       });
     }),
