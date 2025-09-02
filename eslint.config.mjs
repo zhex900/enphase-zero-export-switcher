@@ -12,6 +12,7 @@ export default [
       "infra/dist/**",
       "node_modules/**",
       "infra/node_modules/**",
+      "src/functions/dist/**",
     ],
   },
   js.configs.recommended,

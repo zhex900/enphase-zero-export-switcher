@@ -24,6 +24,11 @@ new aws.iam.RolePolicyAttachment("lambdaBasicExec", {
   policyArn: aws.iam.ManagedPolicy.AWSLambdaBasicExecutionRole,
 });
 
+// Reference Tesla stack to get tokens table (must be <org>/<project>/<stack>)
+const teslaStack = new pulumi.StackReference(cfg.require("TESLA_STACK"));
+const tokensTableName = teslaStack.getOutput("tokensTableName");
+const tokensTableArn = teslaStack.getOutput("tokensTableArn");
+
 const lambda = new aws.lambda.Function("enphaseSwitcher", {
   runtime: "nodejs20.x",
   architectures: ["arm64"],
@@ -47,6 +52,7 @@ const lambda = new aws.lambda.Function("enphaseSwitcher", {
       ENPHASE_GRID_PROFILE_NAME_NORMAL_EXPORT_ID: cfg.require(
         "ENPHASE_GRID_PROFILE_NAME_NORMAL_EXPORT_ID",
       ),
+      TOKENS_TABLE: tokensTableName.apply(String),
     },
   },
   code: new pulumi.asset.AssetArchive({
@@ -71,9 +77,19 @@ new aws.iam.RolePolicy("lambdaDynamoAccess", {
           Effect: "Allow",
           Resource: table.arn,
         },
+        {
+          Action: [
+            "dynamodb:GetItem",
+            "dynamodb:PutItem",
+            "dynamodb:UpdateItem",
+            "dynamodb:DescribeTable",
+          ],
+          Effect: "Allow",
+          Resource: tokensTableArn,
+        },
       ],
     })
-    .apply((p) => JSON.stringify(p)),
+    .apply(JSON.stringify),
 });
 
 // Schedule using EventBridge Scheduler in Australia/Sydney timezone
@@ -96,11 +112,11 @@ new aws.iam.RolePolicy("schedulerInvokeLambda", {
         },
       ],
     })
-    .apply((p) => JSON.stringify(p)),
+    .apply(JSON.stringify),
 });
 
 const schedule = new aws.scheduler.Schedule("tenMinDaytimeSydney", {
-  scheduleExpression: "cron(0/10 9-17 ? * * *)",
+  scheduleExpression: "cron(0/15 9-17 ? * * *)",
   scheduleExpressionTimezone: "Australia/Sydney",
   flexibleTimeWindow: { mode: "OFF" },
   target: {

@@ -4,6 +4,8 @@
   "main": "index.js",
   "scripts": {
     "build": "esbuild src/lambda.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.js",
+    "build:functions": "esbuild src/functions/handlers/**/*.ts src/functions/lib/**/*.ts --bundle --platform=node --target=node20 --outdir=src/functions/dist --format=cjs",
+    "clean:functions": "rm -rf src/functions/dist",
     "start": "ts-node src/index.ts",
     "lint": "eslint . --ext .ts,.tsx,.cjs,.mjs",
     "format": "prettier --write .",

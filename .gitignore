@@ -4,3 +4,5 @@ dist/
 infra/Pulumi.*.yaml
 a.js
 a.sh
+infra/tesla-fleet-api/.env
+infra/tesla-fleet-api/Pulumi.*.yaml

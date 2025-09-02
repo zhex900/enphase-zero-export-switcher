@@ -15,17 +15,19 @@ describe("Amber client", () => {
   it("costsMeToExport returns true when export price is positive", async () => {
     mockAmberCurrentPrices({ siteId: "SITE1", importCents: 10, exportCents: 1 });
     const amber = createAmber({ apiToken: "dummy", siteId: "SITE1" });
-    const costs = await amber.costsMeToExport();
-    expect(costs).toBe(true);
+    const { cost } = await amber.costsMeToExport();
+    expect(cost).toBe(true);
   });
 
   it("costsMeToExport returns false when export price is negative or zero", async () => {
     mockAmberCurrentPrices({ siteId: "SITE1", importCents: 10, exportCents: 0 });
     const amberZero = createAmber({ apiToken: "dummy", siteId: "SITE1" });
-    expect(await amberZero.costsMeToExport()).toBe(false);
+    const { cost: costZero } = await amberZero.costsMeToExport();
+    expect(costZero).toBe(false);
 
     mockAmberCurrentPrices({ siteId: "SITE1", importCents: 10, exportCents: -5 });
     const amberNeg = createAmber({ apiToken: "dummy", siteId: "SITE1" });
-    expect(await amberNeg.costsMeToExport()).toBe(false);
+    const { cost: costNeg } = await amberNeg.costsMeToExport();
+    expect(costNeg).toBe(false);
   });
 });

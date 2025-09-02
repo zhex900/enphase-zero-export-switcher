@@ -23,7 +23,10 @@ type Logger = {
 
 export interface AmberClient {
   currentPrices(resolution?: number): Promise<CurrentPrices>;
-  costsMeToExport(): Promise<boolean>;
+  costsMeToExport(): Promise<{
+    cost: boolean;
+    prices: CurrentPrices;
+  }>;
 }
 
 export function createAmber(options: {
@@ -84,7 +87,10 @@ export function createAmber(options: {
     }
   }
 
-  async function costsMeToExport(): Promise<boolean> {
+  async function costsMeToExport(): Promise<{
+    cost: boolean;
+    prices: CurrentPrices;
+  }> {
     try {
       const prices = await currentPrices();
       const cost = prices.export.centsPerKwh;
@@ -93,14 +99,17 @@ export function createAmber(options: {
         `Amber says exporting energy to the grid would currently ${cost > 0 ? "cost" : "earn"} me: ${Math.abs(cost)} c/kWh`,
       );
 
-      return cost > 0;
+      return { cost: cost > 0, prices };
     } catch (error) {
       log.error(`Failed to determine export cost: ${error}`);
       throw error;
     }
   }
 
-  return { currentPrices, costsMeToExport };
+  return {
+    costsMeToExport,
+    currentPrices,
+  };
 }
 
 export function amberFromEnv(logger?: Logger): AmberClient {

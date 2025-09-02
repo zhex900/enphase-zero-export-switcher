@@ -226,6 +226,7 @@ async function setEnphaseGridProfile({
   // Always confirm current profile before attempting a change
   const current = await fetchCurrentGridProfile({ token, jar, client, systemId });
   console.log("Current grid profile:", current.selected_grid_profile_name);
+
   if (current.selected_profile_id === gridProfileId) {
     console.log("Grid profile is already set to the desired value");
     await persistProfileState(tableName, {

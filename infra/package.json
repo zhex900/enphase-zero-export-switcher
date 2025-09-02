@@ -8,5 +8,13 @@
   },
   "devDependencies": {
     "typescript": "^5.9.2"
+  },
+  "scripts": {
+    "prepreview:enphase": "npm --prefix .. run build && npm --prefix .. run build:functions",
+    "preview:enphase": "pulumi preview",
+    "preup:enphase": "npm --prefix .. run build && npm --prefix .. run build:functions",
+    "up:enphase": "pulumi up --yes",
+    "predestroy:enphase": "npm --prefix .. run build && npm --prefix .. run build:functions",
+    "destroy:enphase": "pulumi destroy --yes"
   }
 }

@@ -21,9 +21,19 @@ Having requested DIY installer access via the [Enphase Service Manager](https://
 - Fetch current import/export prices from Amber.
 - Decide whether exporting “costs” you (negative FiT).
 - Set Enphase grid profile to zero-export when it’s costly; otherwise restore normal export.
-- The Enphase grid profile is cached in DynamoDB to minimize unnecessary API calls. 
-- Runs every 10 minutes between 9:00–17:00 Australia/Sydney time.
+- The Enphase grid profile is cached in DynamoDB to minimize unnecessary API calls.
+- Runs every 15 minutes between 9:00–17:00 Australia/Sydney time. Enphase takes a long time to apply grid profile change. Longer intervals allows time for Enphase to change the rid profile.
 - [Adjust the battery reserve level to 100% at the same time you switch to the 0 export grid profile](https://github.com/ZimbiX/amber-enphase-zero-export-switcher-tool/issues/1). Immediately change it back to the normal reserve level.
+
+## Tesla battery reserve
+
+If the Tesla battery is not fully charge, when Enphase grid profile is changed to zero export. Enphase stops charging the battery and starts to power the house using the battery. To avoid this, Telsa battery's reserve needs to be changed to 100%. After it is fully charged change it back to its original value.
+
+Telsa provides fleet-api access the Telsa powerwall.
+
+1. Create a Tesla developer account
+1. Create a new app
+   1. Add url
 
 ## Architecture
 
