@@ -2,6 +2,10 @@ import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { beforeAll, afterEach, afterAll } from "vitest";
 
+process.env.AWS_REGION = "ap-southeast-2";
+process.env.TESLA_SCHEDULER_ARN =
+  "arn:aws:scheduler:ap-southeast-2:123456789012:schedule/default/everyMinuteTeslaOnly";
+
 // --- DynamoDB (AWS SDK v3) mock utilities ---
 type Primitive = string | number | boolean;
 type PlainItem = Record<string, Primitive>;
