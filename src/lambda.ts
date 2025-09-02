@@ -1,5 +1,6 @@
 import { main } from "./index";
 
-export const handler = async (): Promise<void> => {
-  await main();
+export const handler = async (event: any): Promise<void> => {
+  const skipEnphase = !!(event && event.skipEnphase);
+  await main({ skipEnphase });
 };

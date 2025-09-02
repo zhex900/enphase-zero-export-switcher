@@ -98,7 +98,33 @@ const dynamoHandler = http.post(
   },
 );
 
-export const server = setupServer(dynamoHandler);
+// --- AWS EventBridge Scheduler (Get/Update schedule) ---
+const schedulerHostRe = /https?:\/\/scheduler\.[-a-z0-9]+\.amazonaws\.com/;
+const teslaSchedulePath = /\/schedules\/everyMinuteTeslaOnly/;
+const schedulerHandlers = [
+  // GetSchedule (optional query params)
+  http.get(new RegExp(`${schedulerHostRe.source}${teslaSchedulePath.source}(?:\\?.*)?$`), () =>
+    HttpResponse.json({
+      Name: "everyMinuteTeslaOnly",
+      GroupName: "default",
+      ScheduleExpression: "rate(1 minute)",
+      ScheduleExpressionTimezone: "UTC",
+      State: "DISABLED",
+      FlexibleTimeWindow: { Mode: "OFF" },
+      Target: {
+        Arn: "arn:aws:lambda:ap-southeast-2:123456789012:function:dummy",
+        RoleArn: "arn:aws:iam::123456789012:role/dummy",
+        Input: JSON.stringify({ skipEnphase: true }),
+      },
+    }),
+  ),
+  // UpdateSchedule (PUT)
+  http.put(new RegExp(`${schedulerHostRe.source}${teslaSchedulePath.source}(?:\\?.*)?$`), () =>
+    HttpResponse.json({}),
+  ),
+];
+
+export const server = setupServer(dynamoHandler, ...schedulerHandlers);
 
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => server.resetHandlers());

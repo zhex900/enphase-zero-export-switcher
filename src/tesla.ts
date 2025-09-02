@@ -29,6 +29,10 @@ export const tesla = async ({
     response: { backup_reserve_percent },
   } = await getTeslaSiteInfo({ accessToken: token.access_token, siteId });
 
+  // on a cloudy day, when solar is not generating much, 
+  // we want to set the backup reserve percent to normal to prevent grid charging.
+  // if backup_reserve_percent === BACKUP_RESERVE_PERCENT_ZERO_EXPORT, and import grid is a lot 
+  // set to BACKUP_RESERVE_PERCENT_NORMAL_EXPORT
   const desiredReserve =
     gridProfile === ZERO_EXPORT
       ? importPrice <= MINIMUM_IMPORT_PRICE

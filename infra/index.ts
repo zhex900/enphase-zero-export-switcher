@@ -29,6 +29,12 @@ const teslaStack = new pulumi.StackReference(cfg.require("TESLA_STACK"));
 const tokensTableName = teslaStack.getOutput("tokensTableName");
 const tokensTableArn = teslaStack.getOutput("tokensTableArn");
 
+// Compute Tesla scheduler ARN deterministically (uses default group and fixed name)
+const accountId = aws.getCallerIdentityOutput({}).accountId;
+const region = pulumi.output(aws.config.region || "ap-southeast-2");
+const teslaSchedulerPhysicalName = "everyMinuteTeslaOnly";
+const teslaSchedulerArnValue = pulumi.interpolate`arn:aws:scheduler:${region}:${accountId}:schedule/default/${teslaSchedulerPhysicalName}`;
+
 const lambda = new aws.lambda.Function("enphaseSwitcher", {
   runtime: "nodejs20.x",
   architectures: ["arm64"],
@@ -53,6 +59,7 @@ const lambda = new aws.lambda.Function("enphaseSwitcher", {
         "ENPHASE_GRID_PROFILE_NAME_NORMAL_EXPORT_ID",
       ),
       TESLA_TOKENS_TABLE: tokensTableName.apply(String),
+      TESLA_SCHEDULER_ARN: teslaSchedulerArnValue,
     },
   },
   code: new pulumi.asset.AssetArchive({
@@ -125,5 +132,36 @@ const schedule = new aws.scheduler.Schedule("tenMinDaytimeSydney", {
   },
 });
 
+// Disabled EventBridge Scheduler to trigger every minute and skip Enphase
+const teslaScheduler = new aws.scheduler.Schedule("everyMinuteTeslaOnly", {
+  name: teslaSchedulerPhysicalName,
+  scheduleExpression: "rate(1 minute)",
+  flexibleTimeWindow: { mode: "OFF" },
+  state: "DISABLED",
+  target: {
+    arn: lambda.arn,
+    roleArn: schedulerRole.arn,
+    input: JSON.stringify({ skipEnphase: true }),
+  },
+});
+
+// Allow the Lambda to enable/disable the Tesla scheduler
+new aws.iam.RolePolicy("lambdaSchedulerAccess", {
+  role: role.id,
+  policy: pulumi
+    .output({
+      Version: "2012-10-17",
+      Statement: [
+        {
+          Action: ["scheduler:UpdateSchedule", "scheduler:GetSchedule"],
+          Effect: "Allow",
+          Resource: teslaScheduler.arn,
+        },
+      ],
+    })
+    .apply(JSON.stringify),
+});
+
 export const functionName = lambda.name;
 export const scheduleArn = schedule.arn;
+export const teslaSchedulerArn = teslaScheduler.arn;

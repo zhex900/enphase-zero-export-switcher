@@ -22,6 +22,7 @@
     "dotenv": "^17.2.1",
     "@aws-sdk/client-dynamodb": "^3.676.0",
     "@aws-sdk/lib-dynamodb": "^3.676.0",
+    "@aws-sdk/client-scheduler": "^3.676.0",
     "tough-cookie": "^6.0.0"
   },
   "devDependencies": {
