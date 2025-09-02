@@ -6,6 +6,14 @@ process.env.AWS_REGION = "ap-southeast-2";
 process.env.TESLA_SCHEDULER_ARN =
   "arn:aws:scheduler:ap-southeast-2:123456789012:schedule/default/everyMinuteTeslaOnly";
 
+// In CI, prevent AWS SDK from calling the instance metadata service and provide dummy creds
+if (process.env.CI) {
+  process.env.AWS_EC2_METADATA_DISABLED = "true";
+  process.env.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "test";
+  process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "test";
+  process.env.AWS_SESSION_TOKEN = process.env.AWS_SESSION_TOKEN || "test";
+}
+
 // --- DynamoDB (AWS SDK v3) mock utilities ---
 type Primitive = string | number | boolean;
 type PlainItem = Record<string, Primitive>;
