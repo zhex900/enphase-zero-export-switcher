@@ -4,7 +4,7 @@ import { ddbGet, ddbPut } from "./db";
 
 import type { NativeAttributeValue } from "@aws-sdk/lib-dynamodb";
 
-const SESSIONS_TABLE = process.env.SESSIONS_TABLE as string;
+const SESSIONS_TABLE = process.env.TESLA_SESSIONS_TABLE as string;
 const ONE_WEEK_MS = 1000 * 60 * 60 * 24 * 7;
 
 export function parseCookies(headers: Record<string, string | undefined>, cookiesArray?: string[]) {

@@ -10,9 +10,9 @@ npm i
 
 ```
 pulumi stack select tesla-api --create
-pulumi config set ALLOWED_USERS "you@example.com"
-pulumi config set CLIENT_ID "..."
-pulumi config set --secret CLIENT_SECRET "..."
+pulumi config set TESLA_ALLOWED_USERS "you@example.com"
+pulumi config set TESLA_CLIENT_ID "..."
+pulumi config set --secret TESLA_CLIENT_SECRET "..."
 ```
 
 3. Deploy (build runs automatically)

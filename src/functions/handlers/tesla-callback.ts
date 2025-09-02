@@ -4,9 +4,9 @@ import { ddbPut } from "../lib/db";
 import { getOrCreateSession, saveSession } from "../lib/session";
 import { doTokenExchange, getUsername } from "../lib/tesla";
 
-const ALLOWED_USERS = (process.env.ALLOWED_USERS || "").split(/[ ,;]+/).filter(Boolean);
-const TOKENS_TABLE = process.env.TOKENS_TABLE as string;
-const DOMAIN = process.env.DOMAIN as string;
+const ALLOWED_USERS = (process.env.TESLA_ALLOWED_USERS || "").split(/[ ,;]+/).filter(Boolean);
+const TOKENS_TABLE = process.env.TESLA_TOKENS_TABLE as string;
+const DOMAIN = process.env.TESLA_DOMAIN as string;
 
 type Session = { sid: string; user?: string };
 

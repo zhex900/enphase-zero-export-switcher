@@ -3,7 +3,7 @@ import crypto from "crypto";
 
 import { ddbGet, ddbPut } from "../lib/db";
 
-const KEYS_TABLE = process.env.KEYS_TABLE as string;
+const KEYS_TABLE = process.env.TESLA_KEYS_TABLE as string;
 
 type KeyId = "public" | "private";
 type KeyRow = { id: KeyId; value: string };

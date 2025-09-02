@@ -1,13 +1,14 @@
 import "dotenv/config";
 import { ddbGet, ddbPut } from "./db";
 
-const CLIENT_ID = process.env.CLIENT_ID as string;
-const CLIENT_SECRET = process.env.CLIENT_SECRET as string;
-const AUDIENCE = (process.env.AUDIENCE as string) || "https://fleet-api.prd.na.vn.cloud.tesla.com";
-const LOCALE = (process.env.LOCALE as string) || "en-US";
-const DOMAIN = process.env.DOMAIN as string; // hostname only for partner registration
+const CLIENT_ID = process.env.TESLA_CLIENT_ID as string;
+const CLIENT_SECRET = process.env.TESLA_CLIENT_SECRET as string;
+const AUDIENCE =
+  (process.env.TESLA_AUDIENCE as string) || "https://fleet-api.prd.na.vn.cloud.tesla.com";
+const LOCALE = (process.env.TESLA_LOCALE as string) || "en-US";
+const DOMAIN = process.env.TESLA_DOMAIN as string; // hostname only for partner registration
 const SCOPE =
-  (process.env.SCOPE as string) ||
+  (process.env.TESLA_SCOPE as string) ||
   "openid user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds energy_device_data energy_cmds offline_access";
 
 type Token = {
@@ -205,7 +206,7 @@ export async function getToken(
 ): Promise<
   { access_token: string; refresh_token: string; username: string; expiration: number } | "NO_TOKEN"
 > {
-  const TOKENS_TABLE = process.env.TOKENS_TABLE as string;
+  const TOKENS_TABLE = process.env.TESLA_TOKENS_TABLE as string;
 
   let userToken = await ddbGet<TokenRow>(TOKENS_TABLE, { username });
 

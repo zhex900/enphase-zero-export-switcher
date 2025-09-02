@@ -52,7 +52,7 @@ const lambda = new aws.lambda.Function("enphaseSwitcher", {
       ENPHASE_GRID_PROFILE_NAME_NORMAL_EXPORT_ID: cfg.require(
         "ENPHASE_GRID_PROFILE_NAME_NORMAL_EXPORT_ID",
       ),
-      TOKENS_TABLE: tokensTableName.apply(String),
+      TESLA_TOKENS_TABLE: tokensTableName.apply(String),
     },
   },
   code: new pulumi.asset.AssetArchive({

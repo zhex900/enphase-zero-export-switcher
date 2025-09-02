@@ -3,8 +3,8 @@ import { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from "aws-l
 import { getOrCreateSession, saveSession } from "../lib/session";
 import { getAuthURL, getToken } from "../lib/tesla";
 
-const ALLOWED_USERS = (process.env.ALLOWED_USERS || "").split(/[ ,;]+/).filter(Boolean);
-const DOMAIN = process.env.DOMAIN as string;
+const ALLOWED_USERS = (process.env.TESLA_ALLOWED_USERS || "").split(/[ ,;]+/).filter(Boolean);
+const DOMAIN = process.env.TESLA_DOMAIN as string;
 
 export async function handler(
   event: APIGatewayProxyEventV2,
@@ -16,7 +16,7 @@ export async function handler(
       event.cookies,
     );
 
-    if (!process.env.CLIENT_ID || !process.env.CLIENT_SECRET) {
+    if (!process.env.TESLA_CLIENT_ID || !process.env.TESLA_CLIENT_SECRET) {
       return {
         statusCode: 200,
         headers: { "Content-Type": "application/json" },
@@ -70,7 +70,7 @@ export async function handler(
         headers: { "Content-Type": "application/json" },
         cookies: [setCookie],
         body: JSON.stringify({
-          CLIENT_ID: process.env.CLIENT_ID,
+          CLIENT_ID: process.env.TESLA_CLIENT_ID,
           title: "Fleet API Tokens",
           user: username,
           access_token: userToken.access_token,

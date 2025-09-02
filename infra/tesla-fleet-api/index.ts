@@ -4,13 +4,13 @@ import * as path from "path";
 
 const cfg = new pulumi.Config();
 
-const allowedUsers = cfg.require("ALLOWED_USERS");
-const clientId = cfg.require("CLIENT_ID");
-const clientSecret = cfg.requireSecret("CLIENT_SECRET");
-const audience = cfg.get("AUDIENCE") || "https://fleet-api.prd.na.vn.cloud.tesla.com";
-const locale = cfg.get("LOCALE") || "en-US";
+const allowedUsers = cfg.require("TESLA_ALLOWED_USERS");
+const clientId = cfg.require("TESLA_CLIENT_ID");
+const clientSecret = cfg.requireSecret("TESLA_CLIENT_SECRET");
+const audience = cfg.get("TESLA_AUDIENCE") || "https://fleet-api.prd.na.vn.cloud.tesla.com";
+const locale = cfg.get("TESLA_LOCALE") || "en-US";
 const scope =
-  cfg.get("SCOPE") ||
+  cfg.get("TESLA_SCOPE") ||
   "openid user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds energy_device_data energy_cmds offline_access";
 
 // DynamoDB tables
@@ -92,16 +92,16 @@ function createLambda(name: string, handler: string) {
     }),
     environment: {
       variables: {
-        ALLOWED_USERS: allowedUsers,
-        CLIENT_ID: clientId,
-        CLIENT_SECRET: clientSecret,
-        AUDIENCE: audience,
-        LOCALE: locale,
-        SCOPE: scope,
-        DOMAIN: httpApi.apiEndpoint.apply((u) => new URL(u).hostname.toLowerCase()),
-        SESSIONS_TABLE: sessionsTable.name,
-        TOKENS_TABLE: tokensTable.name,
-        KEYS_TABLE: keysTable.name,
+        TESLA_ALLOWED_USERS: allowedUsers,
+        TESLA_CLIENT_ID: clientId,
+        TESLA_CLIENT_SECRET: clientSecret,
+        TESLA_AUDIENCE: audience,
+        TESLA_LOCALE: locale,
+        TESLA_SCOPE: scope,
+        TESLA_DOMAIN: httpApi.apiEndpoint.apply((u) => new URL(u).hostname.toLowerCase()),
+        TESLA_SESSIONS_TABLE: sessionsTable.name,
+        TESLA_TOKENS_TABLE: tokensTable.name,
+        TESLA_KEYS_TABLE: keysTable.name,
       },
     },
   });
