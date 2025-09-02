@@ -52,6 +52,12 @@ async function toggleSchedule(state: "ENABLED" | "DISABLED") {
   // 1. Fetch existing schedule
   const existing = await client.send(new GetScheduleCommand({ Name: name }));
 
+  // if schedule is already in the desired state, skip
+  if (existing.State === state) {
+    console.log(`✅ Schedule "${name}" is already ${state}`);
+    return;
+  }
+
   // 2. Update with full config but modified state
   const cmd = new UpdateScheduleCommand({
     Name: name,
