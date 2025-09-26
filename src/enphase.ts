@@ -6,6 +6,10 @@ import { CookieJar } from "tough-cookie";
 
 const DEFAULT_USER_AGENT = "insomnia/11.4.0";
 
+const PROFILE_ZERO_EXPORT = "AS/NZS 4777.2: 2020 Australia A Region 0 kW Export" as const;
+const PROFILE_NORMAL_EXPORT =
+  "AS/NZS 4777.2: 2020 Australia A Region Tesla 10 kW Export Limit" as const;
+
 async function loginAndGetToken(options: {
   email: string;
   password: string;
@@ -94,23 +98,15 @@ async function changeGridProfile(options: {
   );
 }
 
-interface Device {
-  envoyCombiner: {
-    "Envoy-S-Metered-EU": string[];
-  };
-  envoyGridProfile: {
-    selected_profile_id: string;
-    requested_profile_id: string;
-    selected_grid_profile_name: string;
-  };
-  microInverters: {
-    IQ8AC: string[];
-  };
-  qRelays: {
-    "Q Relay": string[];
-  };
-  ensembleEnvoy: boolean;
+interface Envoys {
+  envoys: {
+    id: number;
+    name: string;
+    serial_number: string;
+    grid_profile: string;
+  }[];
 }
+
 async function fetchCurrentGridProfile(options: {
   token: string;
   jar: CookieJar;
@@ -119,8 +115,7 @@ async function fetchCurrentGridProfile(options: {
   userAgent?: string;
 }) {
   const { token, jar, client, systemId, userAgent = DEFAULT_USER_AGENT } = options;
-  const url = `https://enlighten.enphaseenergy.com/service/activation_backend/api/gateway/v4/systems/${systemId}/devices/list`;
-
+  const url = `https://enlighten.enphaseenergy.com/service/system_dashboard/api_internal/dashboard/sites/${systemId}/devices_details?type=envoys`;
   const res = await client.get(url, {
     jar,
     headers: {
@@ -128,8 +123,13 @@ async function fetchCurrentGridProfile(options: {
       "User-Agent": userAgent,
     },
   });
-  const data = res.data as [Device];
-  return data[0].envoyGridProfile;
+  const data = res.data as Envoys;
+  // console.log(JSON.stringify(data, null, 2));
+  const envoyGridProfile = data.envoys.find(
+    (envoy) => envoy.serial_number === process.env.ENPHASE_SERIAL_NUMBER,
+  );
+
+  return envoyGridProfile?.grid_profile;
 }
 
 const ZERO_EXPORT = "zero-export" as const;
@@ -137,8 +137,7 @@ const NORMAL_EXPORT = "normal-export" as const;
 
 type GridProfileState = {
   systemId: string;
-  profileId: string;
-  profileName?: string;
+  profileName: string;
   updatedAt: string;
 };
 
@@ -170,10 +169,19 @@ async function putStoredGridProfile(options: { tableName: string; state: GridPro
   );
 }
 
-function getDesiredGridProfileId(target: typeof ZERO_EXPORT | typeof NORMAL_EXPORT): string {
+function getDesiredGridProfile(target: typeof ZERO_EXPORT | typeof NORMAL_EXPORT): {
+  profileId: string;
+  profileName: string;
+} {
   return target === ZERO_EXPORT
-    ? (process.env.ENPHASE_GRID_PROFILE_NAME_ZERO_EXPORT_ID ?? "")
-    : (process.env.ENPHASE_GRID_PROFILE_NAME_NORMAL_EXPORT_ID ?? "");
+    ? {
+        profileId: process.env.ENPHASE_GRID_PROFILE_NAME_ZERO_EXPORT_ID as string,
+        profileName: PROFILE_ZERO_EXPORT,
+      }
+    : {
+        profileId: process.env.ENPHASE_GRID_PROFILE_NAME_NORMAL_EXPORT_ID as string,
+        profileName: PROFILE_NORMAL_EXPORT,
+      };
 }
 
 async function persistProfileState(
@@ -204,7 +212,7 @@ async function setEnphaseGridProfile({
     console.error("Please set ENPHASE_EMAIL and ENPHASE_PASSWORD environment variables.");
     process.exit(1);
   }
-  const gridProfileId = getDesiredGridProfileId(gridProfile);
+  const desiredGridProfile = getDesiredGridProfile(gridProfile);
 
   // If a DynamoDB table is configured, prefer checking stored state first
   let stored: GridProfileState | undefined;
@@ -212,7 +220,7 @@ async function setEnphaseGridProfile({
     try {
       stored = await getStoredGridProfile({ tableName, systemId });
       console.log("Stored grid profile:", stored);
-      if (stored && stored.profileId === gridProfileId) {
+      if (stored && stored.profileName === desiredGridProfile.profileName) {
         console.log("Stored grid profile already matches desired target; skipping change");
         return;
       }
@@ -224,15 +232,15 @@ async function setEnphaseGridProfile({
   const { token, jar, client } = await loginAndGetToken({ email, password });
 
   // Always confirm current profile before attempting a change
-  const current = await fetchCurrentGridProfile({ token, jar, client, systemId });
-  console.log("Current grid profile:", current.selected_grid_profile_name);
+  let currentGridProfileName = await fetchCurrentGridProfile({ token, jar, client, systemId });
 
-  if (current.selected_profile_id === gridProfileId) {
+  console.log("Current grid profile:", currentGridProfileName);
+
+  if (currentGridProfileName === desiredGridProfile.profileName) {
     console.log("Grid profile is already set to the desired value");
     await persistProfileState(tableName, {
       systemId,
-      profileId: gridProfileId,
-      profileName: current.selected_grid_profile_name,
+      profileName: currentGridProfileName,
       updatedAt: new Date().toISOString(),
     });
     return;
@@ -244,19 +252,22 @@ async function setEnphaseGridProfile({
     jar,
     client,
     systemId,
-    gridProfileId,
+    gridProfileId: desiredGridProfile.profileId,
   });
 
-  const result = await fetchCurrentGridProfile({ token, jar, client, systemId });
-  console.log("Result:", result);
+  currentGridProfileName = await fetchCurrentGridProfile({ token, jar, client, systemId });
+  console.log("Current grid profile:", currentGridProfileName);
 
   // Persist new state to DynamoDB if configured
   await persistProfileState(tableName, {
     systemId,
-    profileId: gridProfileId,
-    profileName: result.selected_grid_profile_name,
+    profileName: currentGridProfileName ?? "",
     updatedAt: new Date().toISOString(),
   });
+
+  if (currentGridProfileName === desiredGridProfile.profileName) {
+    console.log("Grid profile is set to the desired value");
+  }
 }
 
 export { setEnphaseGridProfile, ZERO_EXPORT, NORMAL_EXPORT };
