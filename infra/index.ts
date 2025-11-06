@@ -52,6 +52,8 @@ const lambda = new aws.lambda.Function("enphaseSwitcher", {
       ENPHASE_SYSTEM_ID: cfg.require("ENPHASE_SYSTEM_ID"),
       ENPHASE_SERIAL_NUMBER: cfg.require("ENPHASE_SERIAL_NUMBER"),
       ENPHASE_PART_NUMBER: cfg.require("ENPHASE_PART_NUMBER"),
+      TESLA_CLIENT_ID: cfg.require("TESLA_CLIENT_ID"),
+      TESLA_CLIENT_SECRET: cfg.require("TESLA_CLIENT_SECRET"),
       ENPHASE_GRID_PROFILE_NAME_ZERO_EXPORT_ID: cfg.require(
         "ENPHASE_GRID_PROFILE_NAME_ZERO_EXPORT_ID",
       ),
@@ -156,6 +158,28 @@ new aws.iam.RolePolicy("lambdaSchedulerAccess", {
           Action: ["scheduler:UpdateSchedule", "scheduler:GetSchedule"],
           Effect: "Allow",
           Resource: teslaScheduler.arn,
+        },
+      ],
+    })
+    .apply(JSON.stringify),
+});
+
+// Allow Lambda role to pass the Scheduler's execution role when updating the schedule target
+new aws.iam.RolePolicy("lambdaCanPassSchedulerRole", {
+  role: role.id,
+  policy: pulumi
+    .output({
+      Version: "2012-10-17",
+      Statement: [
+        {
+          Action: ["iam:PassRole"],
+          Effect: "Allow",
+          Resource: schedulerRole.arn,
+          Condition: {
+            StringEquals: {
+              "iam:PassedToService": "scheduler.amazonaws.com",
+            },
+          },
         },
       ],
     })

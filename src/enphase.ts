@@ -216,18 +216,18 @@ async function setEnphaseGridProfile({
 
   // If a DynamoDB table is configured, prefer checking stored state first
   let stored: GridProfileState | undefined;
-  if (tableName) {
-    try {
-      stored = await getStoredGridProfile({ tableName, systemId });
-      console.log("Stored grid profile:", stored);
-      if (stored && stored.profileName === desiredGridProfile.profileName) {
-        console.log("Stored grid profile already matches desired target; skipping change");
-        return;
-      }
-    } catch (err) {
-      console.warn("Failed to read stored grid profile state; proceeding with API check", err);
-    }
-  }
+  // if (tableName) {
+  //   try {
+  //     stored = await getStoredGridProfile({ tableName, systemId });
+  //     console.log("Stored grid profile:", stored);
+  //     if (stored && stored.profileName === desiredGridProfile.profileName) {
+  //       console.log("Stored grid profile already matches desired target; skipping change");
+  //       return;
+  //     }
+  //   } catch (err) {
+  //     console.warn("Failed to read stored grid profile state; proceeding with API check", err);
+  //   }
+  // }
 
   const { token, jar, client } = await loginAndGetToken({ email, password });
 
